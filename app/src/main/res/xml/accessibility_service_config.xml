@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  п.14 ТЗ: перехват одновременного нажатия Громкость+ и Громкость-.
+  ВНИМАНИЕ: начиная с Android 11+ система может не пропускать эти события
+  в фоновые Accessibility-сервисы стабильно — см. README, раздел "Известные ограничения".
+  Рабочая альтернатива — Вариант 2 (ROLE_ASSISTANT).
+-->
+<accessibility-service xmlns:android="http://schemas.android.com/apk/res/android"
+    android:accessibilityEventTypes="typeAllMask"
+    android:accessibilityFeedbackType="feedbackGeneric"
+    android:accessibilityFlags="flagRequestFilterKeyEvents"
+    android:canRequestFilterKeyEvents="true"
+    android:notificationTimeout="100"
+    android:description="@string/wakeword_notification_text" />

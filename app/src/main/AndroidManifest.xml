@@ -1,0 +1,116 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <!-- п.13.1 Звонки -->
+    <uses-permission android:name="android.permission.CALL_PHONE" />
+    <uses-permission android:name="android.permission.READ_CONTACTS" />
+
+    <!-- п.13.7 SMS -->
+    <uses-permission android:name="android.permission.SEND_SMS" />
+
+    <!-- п.12 Речь -->
+    <uses-permission android:name="android.permission.RECORD_AUDIO" />
+
+    <!-- п.9-11 Фоновая работа wake-word детектора -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MICROPHONE" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
+
+    <!-- п.13.3 Напоминания / таймеры -->
+    <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
+    <uses-permission android:name="android.permission.USE_EXACT_ALARM" />
+
+    <!-- п.13.8 Поиск в интернете -->
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+
+    <!-- п.13.4 Чтение уведомлений — доступ выдаётся вручную пользователем в настройках -->
+    <!-- NotificationListenerService не требует permission в манифесте, только BIND_NOTIFICATION_LISTENER_SERVICE у сервиса -->
+
+    <!-- п.14 Вариант 1: перехват кнопок через Accessibility -->
+    <uses-permission android:name="android.permission.PACKAGE_USAGE_STATS"
+        tools:node="remove" /> <!-- убери remove, если понадобится статистика использования -->
+
+    <application
+        android:name=".AssistantApplication"
+        android:allowBackup="false"
+        android:icon="@mipmap/ic_launcher"
+        android:label="@string/app_name"
+        android:theme="@style/Theme.OfflineAssistant"
+        android:usesCleartextTraffic="false"
+        android:extractNativeLibs="true">
+
+        <activity
+            android:name=".ui.MainActivity"
+            android:exported="true"
+            android:launchMode="singleTop">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
+        <!-- Экран привязки алиаса к контакту, см. ContactResolver.kt -->
+        <activity
+            android:name=".ui.ContactRegistrationActivity"
+            android:exported="false"
+            android:theme="@android:style/Theme.Translucent.NoTitleBar" />
+
+        <!-- Фоновый сервис: держит wake-word детектор активным (п.8-9 ТЗ) -->
+        <service
+            android:name=".wakeword.WakeWordService"
+            android:exported="false"
+            android:foregroundServiceType="microphone" />
+
+        <!-- п.13.4 Чтение уведомлений -->
+        <service
+            android:name=".commands.NotificationReaderService"
+            android:exported="true"
+            android:permission="android.permission.BIND_NOTIFICATION_LISTENER_SERVICE">
+            <intent-filter>
+                <action android:name="android.service.notification.NotificationListenerService" />
+            </intent-filter>
+        </service>
+
+        <!-- п.14 Вариант 1: перехват физических кнопок (без root) -->
+        <service
+            android:name=".ui.ButtonAccessibilityService"
+            android:exported="false"
+            android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE">
+            <intent-filter>
+                <action android:name="android.accessibilityservice.AccessibilityService" />
+            </intent-filter>
+            <meta-data
+                android:name="android.accessibilityservice"
+                android:resource="@xml/accessibility_service_config" />
+        </service>
+
+        <!--
+          п.14 Вариант 2 (рекомендуемый на будущее): зарегистрировать приложение
+          как системного ассистента через VoiceInteractionService.
+          Раскомментировать и реализовать AssistantInteractionService при переходе на ROLE_ASSISTANT.
+
+        <service
+            android:name=".ui.AssistantInteractionService"
+            android:exported="true"
+            android:permission="android.permission.BIND_VOICE_INTERACTION">
+            <intent-filter>
+                <action android:name="android.service.voice.VoiceInteractionService" />
+            </intent-filter>
+            <meta-data
+                android:name="android.voice_interaction"
+                android:resource="@xml/voice_interaction_config" />
+        </service>
+        -->
+
+        <receiver
+            android:name=".commands.TimerAlarmReceiver"
+            android:exported="false" />
+        <receiver
+            android:name=".commands.ReminderAlarmReceiver"
+            android:exported="false" />
+
+    </application>
+</manifest>

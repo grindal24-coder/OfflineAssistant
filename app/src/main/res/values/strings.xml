@@ -1,0 +1,12 @@
+<resources>
+    <string name="app_name">Offline Assistant</string>
+    <!--
+      Фраза активации. Изначально была короткая "Эй" — заменено на "Эй Ассистент"
+      по итогам ревью ТЗ: короткое слово даёт много ложных срабатываний
+      (телевизор, обычная речь). Двухсловная фраза снижает false positive rate
+      у wake-word детектора на порядок.
+    -->
+    <string name="wake_word">Эй Ассистент</string>
+    <string name="wakeword_notification_title">Ассистент слушает</string>
+    <string name="wakeword_notification_text">Скажи «Эй Ассистент», чтобы активировать</string>
+</resources>

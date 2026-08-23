@@ -1,0 +1,3 @@
+# Скопируй в local.properties (файл не в git) и подставь свой ключ,
+# см. README.md, раздел "Поиск с синтезом ответа".
+BRAVE_SEARCH_API_KEY=
