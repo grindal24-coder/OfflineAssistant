@@ -29,6 +29,21 @@ jobs:
           distribution: temurin
           java-version: '17'
 
+      - name: Сгенерировать gradlew (если его ещё нет в репозитории)
+        run: |
+          if [ ! -f "./gradlew" ]; then
+            echo "gradlew не найден в репозитории — генерирую через gradle-скачиватель"
+            curl -s https://get.sdkman.io | bash > /dev/null 2>&1 || true
+            # Проще и надёжнее: используем официальный gradle-контейнер напрямую,
+            # без установки Gradle в систему раннера.
+            curl -sL https://services.gradle.org/distributions/gradle-8.7-bin.zip -o gradle.zip
+            unzip -q gradle.zip
+            ./gradle-8.7/bin/gradle wrapper --gradle-version 8.7
+            rm -rf gradle.zip gradle-8.7
+          else
+            echo "gradlew уже есть в репозитории, пропускаю генерацию"
+          fi
+
       - name: Кэш Gradle
         uses: actions/cache@v4
         with:
