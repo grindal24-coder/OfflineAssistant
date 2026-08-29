@@ -1,6 +1,5 @@
 name: Build APK
 
-# Запускается на каждый push в main и вручную из вкладки Actions ("Run workflow").
 on:
   push:
     branches: [ main ]
@@ -13,15 +12,22 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout репозитория (включая submodules)
+      - name: Checkout репозитория
         uses: actions/checkout@v4
-        with:
-          # ВАЖНО: submodules: true подтягивает ai/llama.cpp, если ты его
-          # подключил командой `git submodule add ...` и закоммитил.
-          # Если submodule ещё не добавлен — сборка упадёт на шаге native
-          # build с понятной ошибкой из CMakeLists.txt (см. README проекта,
-          # раздел "Подключить llama.cpp").
-          submodules: recursive
+
+      # llama.cpp не хранится в репозитории — клонируется заново на каждой
+      # сборке, версия закреплена на теге v0.3.0 (первый стабильный номерной
+      # релиз llama.cpp, август 2026), чтобы API не "уезжал" из-под
+      # native-lib.cpp. См. комментарий в начале native-lib.cpp, если
+      # захочешь обновить версию.
+      - name: Клонировать llama.cpp (закреплённая версия v0.3.0)
+        run: |
+          if [ ! -f "ai/llama.cpp/CMakeLists.txt" ]; then
+            echo "ai/llama.cpp не найден — клонирую llama.cpp v0.3.0"
+            git clone --branch v0.3.0 --depth 1 https://github.com/ggml-org/llama.cpp ai/llama.cpp
+          else
+            echo "ai/llama.cpp уже есть в репозитории, пропускаю клонирование"
+          fi
 
       - name: Установить JDK 17
         uses: actions/setup-java@v4
@@ -29,30 +35,13 @@ jobs:
           distribution: temurin
           java-version: '17'
 
-      - name: Сгенерировать gradlew (если его ещё нет в репозитории)
-        run: |
-          if [ ! -f "./gradlew" ]; then
-            echo "gradlew не найден в репозитории — генерирую через gradle-скачиватель"
-            curl -s https://get.sdkman.io | bash > /dev/null 2>&1 || true
-            # Проще и надёжнее: используем официальный gradle-контейнер напрямую,
-            # без установки Gradle в систему раннера.
-            curl -sL https://services.gradle.org/distributions/gradle-8.7-bin.zip -o gradle.zip
-            unzip -q gradle.zip
-            ./gradle-8.7/bin/gradle wrapper --gradle-version 8.7
-            rm -rf gradle.zip gradle-8.7
-          else
-            echo "gradlew уже есть в репозитории, пропускаю генерацию"
-          fi
-
-      - name: Кэш Gradle
-        uses: actions/cache@v4
+      # Официальный экшен от Gradle: сам скачивает и кэширует нужную версию
+      # и кладёт бинарник `gradle` в PATH. Не требует ни gradlew, ни ручной
+      # распаковки zip (та ручная схема ломалась — см. историю сборок).
+      - name: Установить Gradle 8.7
+        uses: gradle/actions/setup-gradle@v4
         with:
-          path: |
-            ~/.gradle/caches
-            ~/.gradle/wrapper
-          key: gradle-${{ runner.os }}-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
-          restore-keys: |
-            gradle-${{ runner.os }}-
+          gradle-version: '8.7'
 
       - name: Установить Android SDK / NDK / CMake
         uses: android-actions/setup-android@v3
@@ -60,11 +49,8 @@ jobs:
       - name: Установить конкретную версию NDK
         run: sdkmanager --install "ndk;26.3.11579264" "cmake;3.22.1"
 
-      - name: Дать права на выполнение gradlew
-        run: chmod +x ./gradlew
-
       - name: Собрать debug APK
-        run: ./gradlew assembleDebug --stacktrace
+        run: gradle assembleDebug --stacktrace
 
       - name: Загрузить APK как артефакт
         uses: actions/upload-artifact@v4
