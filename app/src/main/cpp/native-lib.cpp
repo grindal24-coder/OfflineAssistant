@@ -46,27 +46,30 @@
 #define LOGI(...) __android_log_print(ANDROID_LOG_INFO, LOG_TAG, __VA_ARGS__)
 #define LOGE(...) __android_log_print(ANDROID_LOG_ERROR, LOG_TAG, __VA_ARGS__)
 
-struct LlamaSession {
-    llama_model* model = nullptr;
-    llama_context* ctx = nullptr;
+struct LlamaSession
+{
+    llama_model *model = nullptr;
+    llama_context *ctx = nullptr;
 };
 
 extern "C" JNIEXPORT jlong JNICALL
 Java_com_offlineassistant_ai_LlamaBridge_loadModel(
-        JNIEnv* env, jobject /* this */,
-        jstring modelPath, jint nThreads, jint contextSize) {
+    JNIEnv *env, jobject /* this */,
+    jstring modelPath, jint nThreads, jint contextSize)
+{
 
-    const char* path = env->GetStringUTFChars(modelPath, nullptr);
+    const char *path = env->GetStringUTFChars(modelPath, nullptr);
 
     llama_model_params model_params = llama_model_default_params();
     // На старых версиях llama.cpp функция называется llama_load_model_from_file,
     // на новых — llama_model_load_from_file (старое имя оставлено как
     // deprecated-обёртка в части релизов). Если компилятор ругается на
     // отсутствие символа — попробуй заменить на llama_model_load_from_file.
-    llama_model* model = llama_load_model_from_file(path, model_params);
+    llama_model *model = llama_load_model_from_file(path, model_params);
     env->ReleaseStringUTFChars(modelPath, path);
 
-    if (model == nullptr) {
+    if (model == nullptr)
+    {
         LOGE("Не удалось загрузить модель");
         return -1;
     }
@@ -76,53 +79,58 @@ Java_com_offlineassistant_ai_LlamaBridge_loadModel(
     ctx_params.n_threads = nThreads;
     ctx_params.n_threads_batch = nThreads;
 
-    llama_context* ctx = llama_new_context_with_model(model, ctx_params);
-    if (ctx == nullptr) {
+    llama_context *ctx = llama_new_context_with_model(model, ctx_params);
+    if (ctx == nullptr)
+    {
         LOGE("Не удалось создать context");
         llama_free_model(model);
         return -1;
     }
 
-    auto* session = new LlamaSession{model, ctx};
+    auto *session = new LlamaSession{model, ctx};
     return reinterpret_cast<jlong>(session);
 }
 
 extern "C" JNIEXPORT void JNICALL
 Java_com_offlineassistant_ai_LlamaBridge_unloadModel(
-        JNIEnv* env, jobject /* this */, jlong handle) {
-    if (handle == 0) return;
-    auto* session = reinterpret_cast<LlamaSession*>(handle);
-    if (session->ctx) llama_free(session->ctx);
-    if (session->model) llama_free_model(session->model);
+    JNIEnv *env, jobject /* this */, jlong handle)
+{
+    if (handle == 0)
+        return;
+    auto *session = reinterpret_cast<LlamaSession *>(handle);
+    if (session->ctx)
+        llama_free(session->ctx);
+    if (session->model)
+        llama_free_model(session->model);
     delete session;
 }
 
 extern "C" JNIEXPORT jstring JNICALL
 Java_com_offlineassistant_ai_LlamaBridge_generate(
-        JNIEnv* env, jobject /* this */, jlong handle,
-        jstring systemPrompt, jstring userPrompt,
-        jint maxTokens, jfloat temperature) {
+    JNIEnv *env, jobject /* this */, jlong handle,
+    jstring systemPrompt, jstring userPrompt,
+    jint maxTokens, jfloat temperature)
+{
 
-    if (handle == 0) return env->NewStringUTF("");
-    auto* session = reinterpret_cast<LlamaSession*>(handle);
-    llama_model* model = session->model;
-    llama_context* ctx = session->ctx;
+    if (handle == 0)
+        return env->NewStringUTF("");
+    auto *session = reinterpret_cast<LlamaSession *>(handle);
+    llama_model *model = session->model;
+    llama_context *ctx = session->ctx;
 
-    const char* sys = env->GetStringUTFChars(systemPrompt, nullptr);
-    const char* usr = env->GetStringUTFChars(userPrompt, nullptr);
+    const char *sys = env->GetStringUTFChars(systemPrompt, nullptr);
+    const char *usr = env->GetStringUTFChars(userPrompt, nullptr);
 
     // Llama 3.2 instruct chat template. Захардкожено под конкретный формат
     // Llama 3.x, а не через llama_chat_apply_template — потому что нам нужен
     // строго этот шаблон под конкретную модель, а не универсальный
     // автоопределяемый (меньше сюрпризов при отладке).
-    std::string prompt = std::string("<|start_header_id|>system<|end_header_id|>\n\n")
-        + sys + "<|eot_id|><|start_header_id|>user<|end_header_id|>\n\n"
-        + usr + "<|eot_id|><|start_header_id|>assistant<|end_header_id|>\n\n";
+    std::string prompt = std::string("<|start_header_id|>system<|end_header_id|>\n\n") + sys + "<|eot_id|><|start_header_id|>user<|end_header_id|>\n\n" + usr + "<|eot_id|><|start_header_id|>assistant<|end_header_id|>\n\n";
 
     env->ReleaseStringUTFChars(systemPrompt, sys);
     env->ReleaseStringUTFChars(userPrompt, usr);
 
-    const llama_vocab* vocab = llama_model_get_vocab(model);
+    const llama_vocab *vocab = llama_model_get_vocab(model);
 
     // --- Токенизация промпта ---
     const int n_prompt_max = static_cast<int>(prompt.size()) + 32; // с запасом
@@ -131,22 +139,22 @@ Java_com_offlineassistant_ai_LlamaBridge_generate(
         vocab,
         prompt.c_str(), static_cast<int32_t>(prompt.size()),
         prompt_tokens.data(), n_prompt_max,
-        /*add_special=*/true, /*parse_special=*/true
-    );
-    if (n_prompt_tokens < 0) {
+        /*add_special=*/true, /*parse_special=*/true);
+    if (n_prompt_tokens < 0)
+    {
         // llama_tokenize возвращает отрицательное число = требуемый размер буфера
         prompt_tokens.resize(-n_prompt_tokens);
         n_prompt_tokens = llama_tokenize(
             vocab, prompt.c_str(), static_cast<int32_t>(prompt.size()),
             prompt_tokens.data(), static_cast<int32_t>(prompt_tokens.size()),
-            true, true
-        );
+            true, true);
     }
     prompt_tokens.resize(n_prompt_tokens);
 
     // --- Прогон промпта через decode (заполняем KV-cache) ---
     llama_batch batch = llama_batch_get_one(prompt_tokens.data(), n_prompt_tokens);
-    if (llama_decode(ctx, batch) != 0) {
+    if (llama_decode(ctx, batch) != 0)
+    {
         LOGE("llama_decode() провалился на промпте");
         return env->NewStringUTF("");
     }
@@ -156,7 +164,7 @@ Java_com_offlineassistant_ai_LlamaBridge_generate(
     // FAST/intent-классификации и 0.2-0.3 для SMART/синтеза ответа —
     // низкая температура держит JSON стабильным).
     llama_sampler_chain_params sparams = llama_sampler_chain_default_params();
-    llama_sampler* sampler = llama_sampler_chain_init(sparams);
+    llama_sampler *sampler = llama_sampler_chain_init(sparams);
     llama_sampler_chain_add(sampler, llama_sampler_init_temp(temperature));
     llama_sampler_chain_add(sampler, llama_sampler_init_top_p(0.9f, 1));
     llama_sampler_chain_add(sampler, llama_sampler_init_dist(LLAMA_DEFAULT_SEED));
@@ -171,19 +179,21 @@ Java_com_offlineassistant_ai_LlamaBridge_generate(
 
     char piece_buf[256];
 
-    while (n_generated < maxTokens) {
+    while (n_generated < maxTokens)
+    {
         new_token = llama_sampler_sample(sampler, ctx, -1);
         llama_sampler_accept(sampler, new_token);
 
-        if (llama_vocab_is_eog(vocab, new_token)) {
+        if (llama_vocab_is_eog(vocab, new_token))
+        {
             break; // модель сама решила закончить (EOS/EOT токен)
         }
 
         int piece_len = llama_token_to_piece(
             vocab, new_token, piece_buf, sizeof(piece_buf),
-            /*lstrip=*/0, /*special=*/false
-        );
-        if (piece_len > 0) {
+            /*lstrip=*/0, /*special=*/false);
+        if (piece_len > 0)
+        {
             result.append(piece_buf, piece_len);
         }
 
@@ -192,17 +202,20 @@ Java_com_offlineassistant_ai_LlamaBridge_generate(
         // генерировать (для intent-классификации модель иногда продолжает
         // "болтать" после JSON, хотя промпт просит этого не делать).
         if (!result.empty() && result.find('}') != std::string::npos &&
-            result.find('{') != std::string::npos) {
+            result.find('{') != std::string::npos)
+        {
             size_t open = result.find('{');
             size_t close = result.rfind('}');
-            if (close > open) {
+            if (close > open)
+            {
                 // JSON похож на завершённый — прекращаем досрочно
                 break;
             }
         }
 
         llama_batch next_batch = llama_batch_get_one(&new_token, 1);
-        if (llama_decode(ctx, next_batch) != 0) {
+        if (llama_decode(ctx, next_batch) != 0)
+        {
             LOGE("llama_decode() провалился в цикле генерации");
             break;
         }
@@ -218,8 +231,11 @@ Java_com_offlineassistant_ai_LlamaBridge_generate(
 
 extern "C" JNIEXPORT jint JNICALL
 Java_com_offlineassistant_ai_LlamaBridge_kvCacheUsage(
-        JNIEnv* env, jobject /* this */, jlong handle) {
-    if (handle == 0) return 0;
-    auto* session = reinterpret_cast<LlamaSession*>(handle);
-    return llama_kv_self_used_cells(session->ctx);
+    JNIEnv *env, jobject /* this */, jlong handle)
+{
+    if (handle == 0)
+        return 0;
+    auto *session = reinterpret_cast<LlamaSession *>(handle);
+    // llama.cpp v0.3.0 использует другую функцию для получения размера KV-cache
+    return llama_get_kv_cache_used_cells(session->ctx);
 }
