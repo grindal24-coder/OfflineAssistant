@@ -221,5 +221,5 @@ Java_com_offlineassistant_ai_LlamaBridge_kvCacheUsage(
         JNIEnv* env, jobject /* this */, jlong handle) {
     if (handle == 0) return 0;
     auto* session = reinterpret_cast<LlamaSession*>(handle);
-    return llama_get_kv_cache_used_cells(session->ctx);
+    return llama_kv_self_used_cells(session->ctx);
 }
