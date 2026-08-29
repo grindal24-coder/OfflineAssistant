@@ -5,7 +5,7 @@ project(offline_assistant_llama)
 # llama.cpp подключается как git submodule в ai/llama.cpp (см. корневой README,
 # раздел "Подключение llama.cpp"). Здесь просто указываем его как поддиректорию.
 # --------------------------------------------------------------------------
-set(LLAMA_CPP_DIR ${CMAKE_SOURCE_DIR}/../../../../../ai/llama.cpp)
+set(LLAMA_CPP_DIR ${CMAKE_SOURCE_DIR}/../../../../ai/llama.cpp)
 
 if(NOT EXISTS ${LLAMA_CPP_DIR}/CMakeLists.txt)
     message(FATAL_ERROR
