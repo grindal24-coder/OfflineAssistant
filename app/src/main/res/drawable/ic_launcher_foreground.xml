@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- Простой символ микрофона по центру, с запасом от края под safe zone адаптивной иконки -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M54,32
+                           c-6.6,0 -12,5.4 -12,12
+                           v14
+                           c0,6.6 5.4,12 12,12
+                           c6.6,0 12,-5.4 12,-12
+                           v-14
+                           c0,-6.6 -5.4,-12 -12,-12
+                           z" />
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M40,58
+                           v0
+                           c0,7.7 6.3,14 14,14
+                           c7.7,0 14,-6.3 14,-14
+                           v0
+                           h-4
+                           v0
+                           c0,5.5 -4.5,10 -10,10
+                           c-5.5,0 -10,-4.5 -10,-10
+                           v0
+                           z" />
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M52,72 h4 v10 h-4 z" />
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M44,82 h20 v4 h-20 z" />
+</vector>
