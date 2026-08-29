@@ -10,8 +10,11 @@ set(LLAMA_CPP_DIR ${CMAKE_SOURCE_DIR}/../../../../../ai/llama.cpp)
 if(NOT EXISTS ${LLAMA_CPP_DIR}/CMakeLists.txt)
     message(FATAL_ERROR
         "llama.cpp не найден в ${LLAMA_CPP_DIR}. "
-        "Выполни: git submodule add https://github.com/ggerganov/llama.cpp ai/llama.cpp "
-        "(см. README.md, раздел 'Подключение llama.cpp')")
+        "На CI (GitHub Actions) это делается автоматически, см. шаг "
+        "'Клонировать llama.cpp' в .github/workflows/build-apk.yml. "
+        "Для локальной сборки в Android Studio выполни: "
+        "git clone --branch v0.3.0 --depth 1 https://github.com/ggml-org/llama.cpp ai/llama.cpp "
+        "(см. README.md, раздел 'llama.cpp подключается автоматически')")
 endif()
 
 # Отключаем ненужные для мобильной сборки таргеты llama.cpp (сервер, тесты и т.п.)

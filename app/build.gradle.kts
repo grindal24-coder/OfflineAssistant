@@ -1,3 +1,5 @@
+import java.util.Properties
+
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
@@ -8,7 +10,7 @@ plugins {
 // корневой .gitignore), чтобы случайно не закоммитить секрет. Если ключ не
 // задан — WebAnswerHandler автоматически откатится на бесключевой
 // DuckDuckGo Instant Answer fallback (см. ai/DuckDuckGoInstantAnswerClient.kt).
-val localProperties = java.util.Properties().apply {
+val localProperties = Properties().apply {
     val file = rootProject.file("local.properties")
     if (file.exists()) file.inputStream().use { load(it) }
 }
